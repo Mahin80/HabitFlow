@@ -28,7 +28,7 @@ const AccountSettings = () => {
 
         const fetchUserInfo = async () => {
             try {
-                const response = await axios.get(`http://localhost:5000/api/account-setting/${userId}`);
+                const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/account-setting/${userId}`);
                 setFormData({
                     firstname: response.data.firstname,
                     lastname: response.data.lastname,
@@ -53,7 +53,7 @@ const AccountSettings = () => {
         setLoading(true);
 
         try {
-            const response = await axios.put(`http://localhost:5000/api/account-setting/${userId}`, formData);
+            const response = await axios.put(`${process.env.REACT_APP_API_URL}/api/account-setting/${userId}`, formData);
             alert(response.data.message);
         } catch (error) {
             console.error('Error updating user info:', error);

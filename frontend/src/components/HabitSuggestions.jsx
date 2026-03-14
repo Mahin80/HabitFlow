@@ -31,7 +31,7 @@ const HabitSuggestions = () => {
       const fetchHabits = async () => {
         try {
           const response = await axios.get(
-            `http://localhost:5000/api/suggesthabit/${userId}`
+            `${process.env.REACT_APP_API_URL}/api/suggesthabit/${userId}`
           );
           
           setHabits(response.data.categoryHabits);
@@ -51,7 +51,7 @@ const HabitSuggestions = () => {
       const { habitName, habitDescription, frequency, categoryId } = habit;
 
       const response = await axios.post(
-        "http://localhost:5000/api/habits/createhabit",
+        `${process.env.REACT_APP_API_URL}/api/habits/createhabit`,
         {
           userId,
           habitName,

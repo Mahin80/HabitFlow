@@ -20,7 +20,7 @@ const UpdateHabit = () => {
     useEffect(() => {
         const fetchHabitDetails = async () => {
             try {
-                const response = await axios.get(`http://localhost:5000/api/habits/habitDetails/${habitId}`);
+                const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/habits/habitDetails/${habitId}`);
                 const habit = response.data;
                 setFormData({
                     habitName: habit.habitName || '',
@@ -55,7 +55,7 @@ const UpdateHabit = () => {
         setError('');
 
         try {
-            const response = await axios.put(`http://localhost:5000/api/habits/updatehabit/${habitId}`, formData);
+            const response = await axios.put(`${process.env.REACT_APP_API_URL}/api/habits/updatehabit/${habitId}`, formData);
             console.log('Habit updated successfully:', response.data);
             alert('Habit updated successfully.');
             navigate('/dashboard');

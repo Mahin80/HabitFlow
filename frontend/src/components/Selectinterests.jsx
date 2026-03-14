@@ -59,7 +59,7 @@ const SelectInterests = () => {
     }
 
     try {
-      const response = await axios.post("http://localhost:5000/api/interests/save", {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/interests/save`, {
         userId,
         selectedInterests,
       });

@@ -33,7 +33,7 @@ const Dashboard = ({ userId, username }) => {
 
             try {
                 const habitsResponse = await axios.get(
-                    `http://localhost:5000/api/habits/${frequency}?userId=${userId}`
+                    `${process.env.REACT_APP_API_URL}/api/habits/${frequency}?userId=${userId}`
                 );
                 setHabits(habitsResponse.data);
 
@@ -65,7 +65,7 @@ const Dashboard = ({ userId, username }) => {
 
     const handleCheckboxChange = async (habitId) => {
         try {
-            await axios.post('http://localhost:5000/api/habits/update-progress', {
+            await axios.post(`${process.env.REACT_APP_API_URL}/api/habits/update-progress`, {
                 userId,
                 habitId,
                 date: currentDate,
@@ -74,7 +74,7 @@ const Dashboard = ({ userId, username }) => {
 
             // Refetch habits to update the UI
             const habitsResponse = await axios.get(
-                `http://localhost:5000/api/habits/${frequency}?userId=${userId}`
+                `${process.env.REACT_APP_API_URL}/api/habits/${frequency}?userId=${userId}`
             );
             setHabits(habitsResponse.data);
             calculateOverallProgress(habitsResponse.data);
@@ -89,7 +89,7 @@ const Dashboard = ({ userId, username }) => {
 
     const handleDeleteHabit = async (habitId) => {
         try {
-            const response = await axios.delete(`http://localhost:5000/api/habits/deletehabit/${habitId}`);
+            const response = await axios.delete(`${process.env.REACT_APP_API_URL}/api/habits/deletehabit/${habitId}`);
             if (response.status === 200) {
                 alert('Habit Deleted Successfully');
                 //setGoals((prev) => prev.filter((habit) => habit.habitId !== habitId));

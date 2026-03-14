@@ -32,7 +32,7 @@ function SignUp() {
 
     try {
       // Send signup request to backend
-      await axios.post('http://localhost:5000/auth/signup', {
+      await axios.post(`${process.env.REACT_APP_API_URL}/auth/signup`, {
         firstName,
         lastName,
         username,

@@ -20,7 +20,7 @@ const ForgetPassword = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:5000/api/password/forgot-password', {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/password/forgot-password`, {
         username, // Send `username` 
       });
 
@@ -47,7 +47,7 @@ const ForgetPassword = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:5000/api/password/reset-password', {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/password/reset-password`, {
         username, // Send `username` instead of `userId`
         newPassword,
       });

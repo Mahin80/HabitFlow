@@ -31,7 +31,7 @@ const TrackProgress = () => {
       setIsDataLoaded(false);
       try {
         const response = await axios.get(
-          `http://localhost:5000/api/habits/${frequency}?userId=${userId}`
+          `${process.env.REACT_APP_API_URL}/api/habits/${frequency}?userId=${userId}`
         );
         
         setHabitsByFrequency((prevState) => ({

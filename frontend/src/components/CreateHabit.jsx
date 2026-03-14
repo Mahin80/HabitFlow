@@ -34,7 +34,7 @@ const CreateHabit = () => {
     // Fetch categories from the backend
     const fetchCategories = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/categories');
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/api/categories`);
         const result = response.data;  
 
         console.log('Categories Data:', result); 
@@ -63,7 +63,7 @@ const CreateHabit = () => {
     try {
       console.log('Sending request with data:', habitData);
 
-      const response = await axios.post('http://localhost:5000/api/habits/createhabit', habitData);
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/habits/createhabit`, habitData);
 
       const result = response.data;  // Use response.data instead of response.ok
       console.log('API Response:', response);
