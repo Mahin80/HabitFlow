@@ -1,20 +1,11 @@
-import { Sequelize, DataTypes } from "sequelize";
-import sequelize from "../config/db.js";
+import mongoose from 'mongoose';
 
-const Category = sequelize.define('Category', {
-    categoryId: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
-    },
-    categoryName: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true,
-    },
-}, {
-    timestamps: false,
-    tableName: 'categories',
-});
+const categorySchema = new mongoose.Schema({
+    categoryName: { type: String, required: true, unique: true },
+}, { timestamps: false });
 
-export { Category };
+categorySchema.virtual('categoryId').get(function () { return this._id; });
+categorySchema.set('toJSON', { virtuals: true });
+
+export const Category = mongoose.model('Category', categorySchema);
+

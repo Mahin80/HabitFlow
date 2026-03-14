@@ -2,151 +2,124 @@ import express from 'express';
 import { Habit } from '../models/Habit.js';
 import { HabitProgress } from '../models/HabitProgress.js';
 import { Goal } from '../models/Goal.js';
-import { Sequelize } from 'sequelize';  // <-- Import Sequelize here
-import {UserInterest} from "../models/UserInterest.js";
-import {InterestHabit }from "../models/InterestHabit.js";
-import { DefaultHabit } from "../models/DefaultHabit.js";
 
 const router = express.Router();
+
+// Get habits by frequency with progress and goals
 router.get('/:frequency', async (req, res) => {
   const { userId } = req.query;
   const { frequency } = req.params;
-
   try {
-    // Fetch all habits based on the given frequency and userId
-    const habits = await Habit.findAll({
-      where: {
-        userId,
-        frequency,
-      },
-      attributes: ['habitId', 'habitName', 'description', 'frequency', 'nextDueDate'],
-      include: [
-        {
-          model: HabitProgress,
-          where: { userId }, // Ensure progress belongs to the same user
-          attributes: ['progressId', 'isCompleted', 'completionDate'],
-          required: false, // Include habits even if no progress exists
-        },
-        {
-          model: Goal, // Include Goal model
-          where: { userId }, // Ensure goal belongs to the same user
-          attributes: ['goalId', 'goal'], // Adjust 'goal' to match the actual field in your Goal model
-          required: false, // Include habits even if no goal exists
-        }
-      ],
+    const habits = await Habit.find({ userId, frequency });
+    const habitIds = habits.map((h) => h._id);
+
+    const [progresses, goals] = await Promise.all([
+      HabitProgress.find({ userId, habitId: { $in: habitIds } }),
+      Goal.find({ userId, habitId: { $in: habitIds } }),
+    ]);
+
+    const result = habits.map((habit) => {
+      const habitObj = habit.toJSON();
+      habitObj.HabitProgresses = progresses
+        .filter((p) => p.habitId.equals(habit._id))
+        .map((p) => p.toJSON());
+      habitObj.Goal = goals.find((g) => g.habitId.equals(habit._id))?.toJSON() || null;
+      return habitObj;
     });
 
-    res.status(200).json(habits);
+    res.status(200).json(result);
   } catch (error) {
     console.error('Error fetching habits and goals:', error);
     res.status(500).json({ message: 'Error fetching habits and goals' });
   }
 });
 
-
-
-
-
-
 // Create a new habit
 router.post('/createhabit', async (req, res) => {
-    console.log("Request received at /createhabit:", req.body);  // Log the incoming request
+  console.log('Request received at /createhabit:', req.body);
+  const { userId, habitName, description, frequency, categoryId } = req.body;
 
-    const { userId, habitName, description, frequency, categoryId } = req.body;
-
-    try {
-        // Set startDate to the current date (today)
-        const startDateObj = new Date();  // Current date
-
-        // Calculate nextDueDate based on frequency
-        let nextDueDate;
-        if (frequency === 'daily') {
-            nextDueDate = new Date(startDateObj);
-            nextDueDate.setDate(startDateObj.getDate() + 1);  // For daily habits, nextDueDate is one day after startDate
-        } else if (frequency === 'weekly') {
-            nextDueDate = new Date(startDateObj);
-            nextDueDate.setDate(startDateObj.getDate() + 7);  // For weekly habits, nextDueDate is one week after startDate
-        } else if (frequency === 'monthly') {
-            nextDueDate = new Date(startDateObj);
-            nextDueDate.setMonth(startDateObj.getMonth() + 1);  // For monthly habits, nextDueDate is one month after startDate
-        }
-
-        // Ensure nextDueDate is a valid date
-        if (isNaN(nextDueDate)) {
-            return res.status(400).json({ message: "Calculated nextDueDate is invalid." });
-        }
-
-        console.log('Calculated nextDueDate:', nextDueDate);
-
-        // Create the habit with the calculated nextDueDate
-        const newHabit = await Habit.create({
-            userId,
-            habitName,
-            description,
-            frequency,
-            categoryId,
-            startDate: startDateObj,  // Set the current date as startDate
-            nextDueDate: nextDueDate,  // Set the nextDueDate based on frequency
-        });
-
-        const today = new Date().toISOString().split('T')[0]; // 'YYYY-MM-DD'
-
-        // Create progress for today if it's not already created (but the event system should already handle this)
-        const existingProgress = await HabitProgress.findOne({
-            where: {
-                userId,
-                habitId: newHabit.habitId,
-                completionDate: today,
-            },
-        });
-
-        if (!existingProgress) {
-            await HabitProgress.create({
-                userId,
-                habitId: newHabit.habitId,
-                completionDate: today,
-                isCompleted: false,
-            });
-        }
-
-        console.log('Habit created:', newHabit);  // Log created habit
-        return res.status(201).json(newHabit);
-    } catch (error) {
-        console.error('Error creating habit:', error);
-        return res.status(500).json({ message: 'Failed to create habit.', error: error.message });
+  try {
+    const startDateObj = new Date();
+    let nextDueDate;
+    if (frequency === 'daily') {
+      nextDueDate = new Date(startDateObj);
+      nextDueDate.setDate(startDateObj.getDate() + 1);
+    } else if (frequency === 'weekly') {
+      nextDueDate = new Date(startDateObj);
+      nextDueDate.setDate(startDateObj.getDate() + 7);
+    } else if (frequency === 'monthly') {
+      nextDueDate = new Date(startDateObj);
+      nextDueDate.setMonth(startDateObj.getMonth() + 1);
     }
+
+    if (!nextDueDate || isNaN(nextDueDate)) {
+      return res.status(400).json({ message: 'Calculated nextDueDate is invalid.' });
+    }
+
+    const newHabit = await Habit.create({
+      userId,
+      habitName,
+      description,
+      frequency,
+      categoryId,
+      startDate: startDateObj,
+      nextDueDate,
+    });
+
+    const today = new Date().toISOString().split('T')[0];
+    const existingProgress = await HabitProgress.findOne({
+      userId,
+      habitId: newHabit._id,
+      completionDate: {
+        $gte: new Date(today + 'T00:00:00Z'),
+        $lte: new Date(today + 'T23:59:59Z'),
+      },
+    });
+
+    if (!existingProgress) {
+      await HabitProgress.create({
+        userId,
+        habitId: newHabit._id,
+        completionDate: new Date(today),
+        isCompleted: false,
+      });
+    }
+
+    console.log('Habit created:', newHabit);
+    return res.status(201).json(newHabit);
+  } catch (error) {
+    console.error('Error creating habit:', error);
+    return res.status(500).json({ message: 'Failed to create habit.', error: error.message });
+  }
 });
 
+// Update progress
 router.post('/update-progress', async (req, res) => {
   const { userId, habitId, date, progress } = req.body;
   console.log('Data received:', req.body);
 
   try {
-    // Ensure the date is in the correct format (YYYY-MM-DD)
-    const formattedDate = new Date(date).toISOString().split('T')[0]; // Convert to YYYY-MM-DD format
+    const formattedDate = new Date(date).toISOString().split('T')[0];
 
-    // Use Sequelize to find progress for the same date, ignoring time
     const existingProgress = await HabitProgress.findOne({
-      where: {
-        userId,
-        habitId,
-        completionDate: {
-          [Sequelize.Op.gte]: formattedDate + 'T00:00:00Z', 
-          [Sequelize.Op.lte]: formattedDate + 'T23:59:59Z' 
-        }
-      }
+      userId,
+      habitId,
+      completionDate: {
+        $gte: new Date(formattedDate + 'T00:00:00Z'),
+        $lte: new Date(formattedDate + 'T23:59:59Z'),
+      },
     });
 
     if (existingProgress) {
       existingProgress.isCompleted = progress;
-      await existingProgress.save(); 
+      await existingProgress.save();
       return res.status(200).json({ message: 'Progress updated successfully!' });
     } else {
-      
       await HabitProgress.create({
         userId,
         habitId,
-        completionDate: formattedDate, 
+        completionDate: new Date(formattedDate),
         isCompleted: progress,
       });
       return res.status(201).json({ message: 'New progress record created!' });
@@ -157,59 +130,47 @@ router.post('/update-progress', async (req, res) => {
   }
 });
 
-// Get all habits for a user, along with their associated goal
-// Get all habits for a user, along with their associated goal
+// Get all habits with goals for a user
 router.get('/all', async (req, res) => {
   const { userId } = req.query;
-
   try {
-      const habitsWithGoals = await Habit.findAll({
-          where: { userId },
-          include: [{
-              model: Goal,
-              required: false, // Not all habits will have a goal
-          }],
-          attributes: ['habitId', 'habitName', 'description', 'frequency', 'startDate'],
-      });
+    const habits = await Habit.find({ userId });
+    const habitIds = habits.map((h) => h._id);
+    const goals = await Goal.find({ habitId: { $in: habitIds } });
 
-      // Return an array even if no habits exist
-      return res.status(200).json(habitsWithGoals || []);
+    const result = habits.map((h) => {
+      const habitObj = h.toJSON();
+      habitObj.Goal = goals.find((g) => g.habitId.equals(h._id))?.toJSON() || null;
+      return habitObj;
+    });
+
+    return res.status(200).json(result);
   } catch (error) {
-      console.error('Error fetching habits with goals:', error);
-      return res.status(500).json({ message: 'Failed to fetch habits with goals.' });
+    console.error('Error fetching habits with goals:', error);
+    return res.status(500).json({ message: 'Failed to fetch habits with goals.' });
   }
 });
 
-
-
+// Delete completed habits for a user
 router.post('/delete-completed-habits', async (req, res) => {
-    const { userId } = req.body;
-
-    try {
-        await Habit.destroy({
-            where: { userId },
-        });
-
-        return res.status(200).json({ message: 'Completed habits deleted successfully.' });
-    } catch (error) {
-        console.error('Error deleting completed habits:', error);
-        return res.status(500).json({ message: 'Failed to delete completed habits.' });
-    }
+  const { userId } = req.body;
+  try {
+    await Habit.deleteMany({ userId });
+    return res.status(200).json({ message: 'Completed habits deleted successfully.' });
+  } catch (error) {
+    console.error('Error deleting completed habits:', error);
+    return res.status(500).json({ message: 'Failed to delete completed habits.' });
+  }
 });
 
+// Get all habits for a user
 router.get('/getAllHabits/:userId', async (req, res) => {
   const { userId } = req.params;
-
   try {
-    const habits = await Habit.findAll({
-      where: { userId },
-      attributes: ['habitId', 'habitName', 'description', 'frequency', 'categoryId', 'startDate'],
-    });
-
+    const habits = await Habit.find({ userId });
     if (habits.length === 0) {
       return res.status(404).json({ message: 'No habits found for this user.' });
     }
-
     return res.status(200).json(habits);
   } catch (error) {
     console.error('Error fetching habits:', error);
@@ -220,17 +181,11 @@ router.get('/getAllHabits/:userId', async (req, res) => {
 // Get details of a specific habit
 router.get('/habitDetails/:habitId', async (req, res) => {
   const { habitId } = req.params;
-
   try {
-    const habit = await Habit.findOne({
-      where: { habitId },
-      attributes: ['habitId', 'habitName', 'description', 'frequency', 'categoryId', 'startDate'],
-    });
-
+    const habit = await Habit.findById(habitId);
     if (!habit) {
       return res.status(404).json({ message: 'Habit not found.' });
     }
-
     return res.status(200).json(habit);
   } catch (error) {
     console.error('Error fetching habit details:', error);
@@ -238,28 +193,20 @@ router.get('/habitDetails/:habitId', async (req, res) => {
   }
 });
 
-
 // Update a habit
 router.put('/updatehabit/:habitId', async (req, res) => {
   const { habitId } = req.params;
   const { habitName, description, frequency, categoryId } = req.body;
-
   try {
-    const habit = await Habit.findByPk(habitId);
-
+    const habit = await Habit.findById(habitId);
     if (!habit) {
       return res.status(404).json({ message: 'Habit not found.' });
     }
-
-    habit.habitName = habitName || habit.habitName;
-    habit.description = description || habit.description;
-    habit.frequency = frequency || habit.frequency;
-    habit.categoryId = categoryId || habit.categoryId;
-   
-
-
+    if (habitName) habit.habitName = habitName;
+    if (description) habit.description = description;
+    if (frequency) habit.frequency = frequency;
+    if (categoryId) habit.categoryId = categoryId;
     await habit.save();
-
     return res.status(200).json({ message: 'Habit updated successfully.', habit });
   } catch (error) {
     console.error('Error updating habit:', error);
@@ -270,22 +217,13 @@ router.put('/updatehabit/:habitId', async (req, res) => {
 // Delete a habit
 router.delete('/deletehabit/:habitId', async (req, res) => {
   const { habitId } = req.params;
-
   try {
-    const habit = await Habit.findByPk(habitId);
-
+    const habit = await Habit.findById(habitId);
     if (!habit) {
       return res.status(404).json({ message: 'Habit not found.' });
     }
-
-    await Goal.destroy({
-      where: {
-        habitId: habitId
-      }
-    });
-
-    await habit.destroy();
-
+    await Goal.deleteMany({ habitId });
+    await habit.deleteOne();
     return res.status(200).json({ message: 'Habit deleted successfully.' });
   } catch (error) {
     console.error('Error deleting habit:', error);
@@ -293,20 +231,18 @@ router.delete('/deletehabit/:habitId', async (req, res) => {
   }
 });
 
-
+// Set a goal for a habit
 router.post('/setGoal/:habitId/:userId', async (req, res) => {
-  const {habitId, userId}  = req.params
-  console.log("habiId==",habitId)
-  const { goal, progressTrack} = req.body;
-  const startDateObj = new Date(); 
-
+  const { habitId, userId } = req.params;
+  console.log('habitId==', habitId);
+  const { goal, progressTrack } = req.body;
   try {
     const newGoal = await Goal.create({
       userId,
       habitId,
       goal,
-      startDate:startDateObj,
-      numberOfDaysToTrack: progressTrack
+      startDate: new Date(),
+      numberOfDaysToTrack: progressTrack,
     });
     return res.status(201).json(newGoal);
   } catch (error) {
@@ -315,79 +251,15 @@ router.post('/setGoal/:habitId/:userId', async (req, res) => {
   }
 });
 
+// Get all goals
 router.get('/getGoal', async (req, res) => {
-
   try {
-    // Fetch the goal associated with the given habitId
-    const goal = await Goal.findAll();
-
-    if (!goal) {
-      return res.status(404).json({ message: 'Goal not found for the given habitId' });
-    }
-
-    return res.status(200).json(goal);
+    const goals = await Goal.find();
+    return res.status(200).json(goals);
   } catch (error) {
     console.error('Error fetching goal:', error);
     return res.status(500).json({ message: 'Failed to fetch goal.' });
   }
 });
 
-/*router.get("/suggesthabit/:userId", async (req, res) => {
-  try {
-      const { userId } = req.params;
-
-      // Step 1: Get user's interests
-      const userInterests = await UserInterest.findAll({
-          where: { userId },
-          include: ["Interest"], // Adjust if aliases are used
-      });
-
-      const interestIds = userInterests.map((ui) => ui.interestId);
-
-      // Step 2: Fetch habits based on user's interests
-      const interestHabits = await InterestHabit.findAll({
-          where: { interestId: interestIds },
-      });
-
-      // Step 3: Fetch default habits for fixed categories
-      const fixedCategories = ["Hobbies", "Health & Fitness", "Productivity"];
-      const defaultHabits = await DefaultHabit.findAll({
-          include: ["Category"], // Ensure Category association is defined
-          where: {
-              "$Category.categoryName$": fixedCategories,
-          },
-      });
-
-      // Group habits by category
-      const categoryHabitMap = {};
-      fixedCategories.forEach((category) => {
-          categoryHabitMap[category] = [];
-      });
-
-      defaultHabits.forEach((habit) => {
-          const categoryName = habit.Category.categoryName;
-          if (categoryHabitMap[categoryName].length < 3) {
-              categoryHabitMap[categoryName].push(habit);
-          }
-      });
-
-      interestHabits.forEach((habit) => {
-          const categoryName = "Other"; // Default category for interest-based habits
-          if (!categoryHabitMap[categoryName]) {
-              categoryHabitMap[categoryName] = [];
-          }
-          categoryHabitMap[categoryName].push(habit);
-      });
-
-      res.json({ categoryHabits: categoryHabitMap });
-  } catch (error) {
-      console.error("Error fetching habit suggestions:", error);
-      res.status(500).json({ error: "Failed to fetch habit suggestions." });
-  }
-});
-*/
-
-
-
 export default router;
-

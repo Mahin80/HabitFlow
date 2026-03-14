@@ -1,20 +1,14 @@
-import 'dotenv/config'
-import { Sequelize} from "sequelize";
+import 'dotenv/config';
+import mongoose from 'mongoose';
 
-const sequelize = new Sequelize('HabitFlow','root','root',{
-    host: 'localhost',
-    dialect: 'mysql',
-});
-
-const testDatabaseConnection = async() => {
-    try{
-        await sequelize.authenticate();
-        console.log("Database connection established successfully.");
-    } catch(error){
-        console.error('Unable to connect to the database:',error);
+const connectDB = async () => {
+    const mongoUri = process.env.MONGODB_URI;
+    if (!mongoUri) {
+        throw new Error('MONGODB_URI is not set. Define it in backend/.env');
     }
+
+    await mongoose.connect(mongoUri);
+    console.log('MongoDB connected successfully');
 };
 
-testDatabaseConnection();
-
-export default sequelize;
+export default connectDB;

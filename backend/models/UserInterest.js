@@ -1,38 +1,12 @@
-import { DataTypes } from "sequelize";
-import sequelize from "../config/db.js";
-import {User} from "./User.js";
-import {Interest} from "./Interest.js";
+import mongoose from 'mongoose';
 
-const UserInterest = sequelize.define("UserInterest", {
-    Id: {
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
-        primaryKey: true,
-    },
-    userId: {
-        type: DataTypes.INTEGER,
-        references: {
-            model: User,
-            key: "userId",
-        },
-        allowNull: false,
-    },
-    interestId: {
-        type: DataTypes.INTEGER,
-        references: {
-            model: Interest,
-            key: "interestId",
-        },
-        allowNull: false,
-    },
-  
-}, 
-{
-    timestamps: false,
-    tableName: 'user_interests',
-}
-);
+const userInterestSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    interestId: { type: mongoose.Schema.Types.ObjectId, ref: 'Interest', required: true },
+}, { timestamps: false });
 
+userInterestSchema.virtual('Id').get(function () { return this._id; });
+userInterestSchema.set('toJSON', { virtuals: true });
 
+export const UserInterest = mongoose.model('UserInterest', userInterestSchema);
 
-export {UserInterest};

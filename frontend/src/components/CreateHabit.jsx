@@ -25,13 +25,10 @@ const CreateHabit = () => {
       try {
         // Decode the JWT token to get user data
         const decoded = jwt_decode(token);
-        console.log('Decoded Token:', decoded); // Log the decoded token
         setUserId(decoded.userId); // Assuming userId is part of the payload
       } catch (error) {
         console.error('Error decoding token:', error);
       }
-    } else {
-      console.log('Token not found in localStorage');
     }
 
     // Fetch categories from the backend

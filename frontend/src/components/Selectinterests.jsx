@@ -21,7 +21,6 @@ const SelectInterests = () => {
     if (token) {
       try {
         const decoded = jwt_decode(token);
-        console.log("Decoded Token:", decoded);
         setUserId(decoded.userId); // Assuming the token contains userId
       } catch (error) {
         console.error("Error decoding token:", error);
@@ -29,7 +28,6 @@ const SelectInterests = () => {
         redirectToLogin();
       }
     } else {
-      console.log("Token not found. Redirecting to login...");
       alert("Please log in to continue.");
       redirectToLogin();
     }
@@ -61,9 +59,6 @@ const SelectInterests = () => {
     }
 
     try {
-      console.log("User ID:", userId);
-      console.log("Selected Interests:", selectedInterests);
-
       const response = await axios.post("http://localhost:5000/api/interests/save", {
         userId,
         selectedInterests,
@@ -78,7 +73,8 @@ const SelectInterests = () => {
       }
     } catch (error) {
       console.error("Error saving interests:", error);
-      alert("An error occurred while saving your interests.");
+      const apiMessage = error?.response?.data?.message;
+      alert(apiMessage || "An error occurred while saving your interests.");
     }
   };
 

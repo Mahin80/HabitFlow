@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     console.log('Request received for /api/categories');
-    const categories = await Category.findAll();
+    const categories = await Category.find();
     res.status(200).json(categories);
   } catch (error) {
     console.error('Error fetching categories:', error);
@@ -16,3 +16,4 @@ router.get('/', async (req, res) => {
 });
 
 export default router;
+

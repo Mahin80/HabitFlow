@@ -1,31 +1,14 @@
-import { Sequelize, DataTypes } from "sequelize";
-import sequelize from "../config/db.js";
+import mongoose from 'mongoose';
 
-const HabitProgress = sequelize.define('HabitProgress', {
-    progressId: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
-    },
-    habitId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-    },
-    userId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-    },
-    completionDate: {
-        type: DataTypes.DATE,
-        allowNull: false,
-    },
-    isCompleted: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
-    },
-}, {
-    timestamps: false,
-    tableName: 'habit_progress',
-});
+const habitProgressSchema = new mongoose.Schema({
+    habitId: { type: mongoose.Schema.Types.ObjectId, ref: 'Habit', required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    completionDate: { type: Date, required: true },
+    isCompleted: { type: Boolean, default: false },
+}, { timestamps: false });
 
-export { HabitProgress };
+habitProgressSchema.virtual('progressId').get(function () { return this._id; });
+habitProgressSchema.set('toJSON', { virtuals: true });
+
+export const HabitProgress = mongoose.model('HabitProgress', habitProgressSchema);
+

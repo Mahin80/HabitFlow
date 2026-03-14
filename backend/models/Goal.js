@@ -1,49 +1,15 @@
-import { Sequelize, DataTypes } from "sequelize";
-import sequelize from "../config/db.js";
-import { User } from './User.js';  
-import { Habit } from './Habit.js'; 
+import mongoose from 'mongoose';
 
-const Goal = sequelize.define('Goal', {
-    goalId: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
-    },
-    userId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-            model: User, 
-            key: 'userId', 
-        },
-    },
-    habitId: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-            model: Habit, 
-            key: 'habitId', 
-        },
-    },
-    goal: {
-        type: DataTypes.STRING,
-        allowNull: false,
-    },
-    startDate: {
-        type: DataTypes.DATE,
-        allowNull: false,
-        defaultValue: Sequelize.NOW,
-    },
-    numberOfDaysToTrack: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-    },
-}, {
-    timestamps: false,
-    tableName: 'goals',
-});
+const goalSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    habitId: { type: mongoose.Schema.Types.ObjectId, ref: 'Habit', required: true },
+    goal: { type: String, required: true },
+    startDate: { type: Date, default: Date.now },
+    numberOfDaysToTrack: { type: Number, required: true },
+}, { timestamps: false });
 
-Goal.belongsTo(User, { foreignKey: 'userId' }); 
-Goal.belongsTo(Habit, { foreignKey: 'habitId' }); 
+goalSchema.virtual('goalId').get(function () { return this._id; });
+goalSchema.set('toJSON', { virtuals: true });
 
-export { Goal };
+export const Goal = mongoose.model('Goal', goalSchema);
+

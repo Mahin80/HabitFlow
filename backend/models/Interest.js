@@ -1,27 +1,11 @@
-import { DataTypes } from "sequelize";
-import sequelize from "../config/db.js";
+import mongoose from 'mongoose';
 
-const Interest = sequelize.define(
-    "Interest",
-    {
-      interestId: {
-        type: DataTypes.INTEGER,
-        autoIncrement: true,
-        primaryKey: true, // Explicitly set this as the primary key
-      },
-      interestName: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true,
-      },
-    },
-    {
-      timestamps: false,
-      tableName: "interests",
-    }
-  );
-  
-  export {Interest};
-  
+const interestSchema = new mongoose.Schema({
+    interestName: { type: String, required: true, unique: true },
+}, { timestamps: false });
 
+interestSchema.virtual('interestId').get(function () { return this._id; });
+interestSchema.set('toJSON', { virtuals: true });
+
+export const Interest = mongoose.model('Interest', interestSchema);
 

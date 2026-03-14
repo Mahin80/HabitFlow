@@ -16,7 +16,6 @@ const HabitSuggestions = () => {
     if (token) {
       try {
         const decoded = jwt_decode(token);
-        console.log("Decoded Token:", decoded); // Debugging the token
         setUserId(decoded.userId); // Set the userId from the decoded token
       } catch (err) {
         console.error("Error decoding token:", err);
@@ -24,7 +23,6 @@ const HabitSuggestions = () => {
         return;
       }
     } else {
-      console.error("Token not found in localStorage");
       setError("No authentication token found. Please log in.");
       return;
     }

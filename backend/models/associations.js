@@ -1,12 +1,6 @@
-import { Habit } from './Habit.js';
-import { HabitProgress } from './HabitProgress.js';
-import { User } from './User.js';
-import { Category } from './Category.js';
-import { Goal } from './Goal.js';
-import { UserInterest } from './UserInterest.js';
-import { Interest } from './Interest.js'; // Ensure Interest is imported
+// No associations needed with Mongoose — relationships are defined via ObjectId refs in each schema.
+export const setupAssociations = () => {};
 
-export const setupAssociations = () => {
   // User-Habit Association
   User.hasMany(Habit, { foreignKey: 'userId' });
   Habit.belongsTo(User, { foreignKey: 'userId' });

@@ -1,40 +1,11 @@
-import { DataTypes } from "sequelize";
-import sequelize from "../config/db.js";
-import { Category } from "./Category.js";
+import mongoose from 'mongoose';
 
-const DefaultHabit = sequelize.define(
-    'DefaultHabit',
-    {
-        id: {
-            type: DataTypes.INTEGER,
-            autoIncrement: true,
-            primaryKey: true,
-            allowNull:false,
-        },
-        habitName: {
-            type: DataTypes.STRING,
-            allowNull: false,
-        },
-        habitDescription: {
-            type: DataTypes.STRING,
-            allowNull: false,
-        },
-        categoryId: {
-            type: DataTypes.INTEGER,
-            references: {
-                model: Category,
-                key: "categoryId",
-            },
-            allowNull: false,
-        },
-    },
-    {
-        timestamps: false,
-        tableName: "default_habits",
-    }
-);
+const defaultHabitSchema = new mongoose.Schema({
+    habitName: { type: String, required: true },
+    habitDescription: { type: String, required: true },
+    categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
+}, { timestamps: false });
 
-Category.hasMany(DefaultHabit, { foreignKey: "categoryId" });
-DefaultHabit.belongsTo(Category, { foreignKey: "categoryId" });
+defaultHabitSchema.set('toJSON', { virtuals: true });
 
-export { DefaultHabit};
+export const DefaultHabit = mongoose.model('DefaultHabit', defaultHabitSchema);

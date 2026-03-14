@@ -1,15 +1,13 @@
 import express from 'express';
-import { User } from '../models/User.js'; // Adjust to your database setup
-import bcrypt from 'bcrypt'; // Import bcrypt for password hashing
+import { User } from '../models/User.js';
+import bcrypt from 'bcrypt';
 
 const router = express.Router();
 
 router.get('/:userId', async (req, res) => {
     try {
-        const user = await User.findByPk(req.params.userId);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
+        const user = await User.findById(req.params.userId);
+        if (!user) return res.status(404).json({ message: 'User not found' });
         res.json(user);
     } catch (error) {
         console.error('Error fetching user info:', error);
@@ -19,29 +17,16 @@ router.get('/:userId', async (req, res) => {
 
 router.put('/:userId', async (req, res) => {
     const { firstname, lastname, username, oldPassword, newPassword } = req.body;
-
     try {
-        const user = await User.findByPk(req.params.userId);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        // Optional: Verify old password if needed
+        const user = await User.findById(req.params.userId);
+        if (!user) return res.status(404).json({ message: 'User not found' });
         if (oldPassword && !(await bcrypt.compare(oldPassword, user.password))) {
             return res.status(400).json({ message: 'Incorrect old password' });
         }
-
-        // Update user fields
         user.firstname = firstname;
         user.lastname = lastname;
         user.username = username;
-
-        // Hash and update password if provided
-        if (newPassword) {
-            const hashedPassword = await bcrypt.hash(newPassword, 10); // Hash password with salt rounds
-            user.password = hashedPassword;
-        }
-
+        if (newPassword) user.password = await bcrypt.hash(newPassword, 10);
         await user.save();
         res.json({ message: 'Account settings updated successfully' });
     } catch (error) {
