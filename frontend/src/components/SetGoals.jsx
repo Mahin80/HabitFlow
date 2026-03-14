@@ -13,8 +13,6 @@ const SetGoals = () => {
   });
 
   const navigate = useNavigate();
-  
-  const [message, setMessage] = useState('');
 
   const handleInputChange = (e) =>{
     const {name,value} = e.target;
@@ -27,17 +25,15 @@ const SetGoals = () => {
   const handleSubmit = async (e) =>{
     e.preventDefault();
     try {
-      const response = await axios.post(`http://localhost:5000/api/habits/setGoal/${habitId}/${userId}`,{
+      await axios.post(`http://localhost:5000/api/habits/setGoal/${habitId}/${userId}` ,{
         goal: formData.goal,
         progressTrack: formData.progressTrack
       });
-      setMessage('Goal set successfully!');
       alert("Goal set successfully!");
       navigate("/dashboard")
       setFormData({ goal: '', progressTrack: '', startDate: '' }); // Reset form
     } catch (error) {
       console.error('Error setting goal:', error);
-      setMessage('Failed to set goal. Please try again.');
     }
   }
   return (

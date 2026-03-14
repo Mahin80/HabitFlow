@@ -6,7 +6,6 @@ import { UserProvider } from './context/UserContext'; // Import the UserProvider
 import AboutUs from './components/AboutUs';
 import Home from './components/Home';
 import Login from './components/Login';
-import NavBar from './components/NavBar';
 import SignUp from './components/SignUp';
 import ContactUs from './components/ContactUs';
 import CreateHabit from './components/CreateHabit';
@@ -69,7 +68,7 @@ function App() {
     } else {
       setUser({ userId: '', username: '' }); // Reset user if token is not available
     }
-  }, [localStorage.getItem('token')]); // Add token to the dependency array, []); // Remove dependency on `localStorage.getItem('token')` to avoid reruns
+  }, []);
 
   return (
     <UserProvider value={{ user, setUser }}>
